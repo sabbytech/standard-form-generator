@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Line Generator</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { background: #f6f8fa; font-family: Arial, sans-serif; margin: 0; }
+    .container { max-width: 400px; margin: 32px auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 3px 8px #ddeaff88; }
+    .inputs {display: flex; gap: 12px; margin-bottom: 18px;}
+    .inputs input, .inputs select {padding:4px 7px; border-radius:4px; border:1px solid #bbc;}
+    button {padding: 7px 15px; background: #347cff; color: #fff; border: none; border-radius: 5px; cursor: pointer;}
+    .result {font-size: 17px; margin: 20px 0 7px;}
+    .sub {color: #506080; font-size:14px;}
+    canvas {width: 100%; max-width: 350px; height: 160px; border:1px solid #e2e7ef; background: #fafcff; border-radius: 7px; margin-top:13px;}
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="inputs">
+    <div>
+      <label>Max Coefficent</label><br>
+      <input id="maxAbs" type="number" min="1" value="8">
+    </div>
+    <div>
+      <label>Allow 0</label><br>
+      <select id="allowZero">
+        <option value="false">No</option>
+        <option value="true">Yes</option>
+      </select>
+    </div>
+    <button id="generate">Generate</button>
+  </div>
+  <div class="result" id="equationDisplay">Ax + By = C</div>
+  <div class="sub">Slope: <span id="slope">—</span></div>
+  <div class="sub">X-intercept: <span id="xint">—</span></div>
+  <div class="sub">Y-intercept: <span id="yint">—</span></div>
+  <canvas id="graph" width="350" height="160"></canvas>
+</div>
+<!-- SCRIPT AT END OF BODY, so all DOM elements exist! -->
+<script>
+(function() {
+  const maxAbsEl = document.getElementById('maxAbs');
+  const allowZeroEl = document.getElementById('allowZero');
+  const equationDisplay = document.getElementById('equationDisplay');
+  const slopeEl = document.getElementById('slope');
+  const xintEl = document.getElementById('xint');
+  const yintEl = document.getElementById('yint');
+  const canvas = document.getElementById('graph');
+  const ctx = canvas.getContext('2d');
+  document.getElementById('generate').onclick = generate;
+  generate();
+
+  function randInt(max, excludeZero){
+    let v;
+    do {
+      v = Math.floor(Math.random() * (2*max+1)) - max;
+    } while(excludeZero && v===0);
+    return v;
+  }
+
+  function format(n) { return Math.round(n*100)/100; }
+
+  function draw(A,B,C) {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle="#eaeef7";
+    for (let d=40; d<canvas.width; d+=40) {
+      ctx.beginPath(); ctx.moveTo(d,0); ctx.lineTo(d,canvas.height); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,d); ctx.lineTo(canvas.width,d); ctx.stroke();
+    }
+    ctx.strokeStyle="#347cff"; ctx.lineWidth=2;
+    function toPx(x, y) {
+      let xx = canvas.width/2 + x*25;
+      let yy = canvas.height/2 - y*25;
+      return [xx, yy];
+    }
+    if (B !== 0) {
+      let x1=-6, y1=(-A/B)*x1 + C/B;
+      let x2=6, y2=(-A/B)*x2 + C/B;
+      ctx.beginPath();
+      ctx.moveTo(...toPx(x1, y1));
+      ctx.lineTo(...toPx(x2, y2));
+      ctx.stroke();
+    } else if (A !== 0) {
+      let x=C/A;
+      ctx.beginPath();
+      ctx.moveTo(...toPx(x, -6));
+      ctx.lineTo(...toPx(x, 6));
+      ctx.stroke();
+    }
+  }
+
+  function generate() {
+    let max = Math.max(1, Number(maxAbsEl.value)||8);
+    let allowZero = allowZeroEl.value === 'true';
+    let A = randInt(max, !allowZero), B = randInt(max, !allowZero), C = randInt(max, false);
+    if (A === 0 && B === 0) (Math.random()<0.5) ? A=randInt(max,true) : B=randInt(max,true);
+    let eq = '';
+    if (A) eq += (A === -1 ? '-' : (A === 1 ? '' : A)) + 'x';
+    if (B) eq += (B > 0 && eq ? ' + ' : (B < 0 ? ' - ' : '')) + (Math.abs(B) === 1 ? '' : Math.abs(B)) + (B ? 'y':'');
+    if (!eq) eq='0';
+    equationDisplay.textContent = eq + ' = ' + C;
+    slopeEl.textContent = (B!==0) ? format(-A/B) : 'undefined';
+    xintEl.textContent = (A!==0) ? '('+format(C/A)+', 0)' : 'none';
+    yintEl.textContent = (B!==0) ? '(0, '+format(C/B)+')' : 'none';
+    draw(A,B,C);
+  }
+})();
+</script>
+</body>
+</html>
